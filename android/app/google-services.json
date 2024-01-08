@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "317206310366",
+    "project_id": "taskprojectfleact",
+    "storage_bucket": "taskprojectfleact.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:317206310366:android:276e1f9d823ffd6804014f",
+        "android_client_info": {
+          "package_name": "com.fleact.taskproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyVwACVgagmVFLc0KjXAW6i51BgjChqgo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -11,11 +11,16 @@ class CustomTextField extends StatelessWidget {
     required this.validator,
     required this.isMultiLine,
     required this.onSubmitted,
+    this.onTap,
+    this.readOnly = false,
   }) : super(key: key);
+
+  final bool readOnly;
 
   final TextEditingController textController;
   final FocusNode textFocus;
   final bool isPass;
+  final VoidCallback? onTap;
   final Icon? leadingIcon;
   final bool isMultiLine;
   final String hintText;
@@ -58,9 +63,17 @@ class CustomTextField extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                onTapOutside: (e) {
+                  textFocus.unfocus();
+                },
               );
             })
         : TextFormField(
+            onTap: onTap,
+            readOnly: readOnly,
+            onTapOutside: (e) {
+              textFocus.unfocus();
+            },
             maxLength: (isMultiLine) ? 250 : null,
             maxLines: (isMultiLine) ? 8 : 1,
             focusNode: textFocus,
@@ -68,7 +81,6 @@ class CustomTextField extends StatelessWidget {
             validator: validator,
             onFieldSubmitted: onSubmitted,
             decoration: InputDecoration(
-              labelText: hintText,
               prefixIcon: leadingIcon,
               floatingLabelAlignment: FloatingLabelAlignment.start,
               labelStyle: const TextStyle(fontWeight: FontWeight.w400),

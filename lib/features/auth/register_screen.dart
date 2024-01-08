@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
+import 'package:taskproject/features/auth/model/user.dart';
+import 'package:taskproject/features/auth/viewmodel/auth_vm.dart';
 import 'package:taskproject/utils/colors.dart';
+import 'package:taskproject/utils/utils.dart';
 import 'package:taskproject/widgets/custom_text_field.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -40,6 +44,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.initState();
   }
 
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -61,6 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
               child: Form(
+                key: _formKey,
                 child: Column(
                   children: [
                     Image.asset('assets/images/logo.png'),
@@ -125,6 +132,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'email can not be empty';
+                        } else if (!AppUtils.isValidEmail(value)) {
+                          return 'Please enter valid email user@example.com';
                         }
                         return null;
                       },
@@ -173,8 +182,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text('Retype Password')),
                     CustomTextField(
-                        textController: passwordController,
-                        textFocus: passwordFocus,
+                        textController: retypePasswordController,
+                        textFocus: retypePasswordFocus,
                         isPass: true,
                         hintText: 'Confirm Password',
                         validator: (value) {
@@ -191,7 +200,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const Gap(20),
                     CustomButton(
                       width: width * 0.8,
-                      onTap: () {},
+                      onTap: () async {
+                        if (_formKey.currentState!.validate()) {
+                          final user = UserModel(
+                            firstName: fNameController.text.trim().toString(),
+                            lastName: lNameController.text.trim().toString(),
+                            email: emailController.text.trim().toString(),
+                            phone: phoneController.text.trim().toString(),
+                            password: passwordController.text.trim().toString(),
+                          );
+                          await context
+                              .read<AuthProvider>()
+                              .registerUser(context, user);
+                        }
+                      },
                       title: 'Create Account',
                     ),
                   ],

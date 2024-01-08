@@ -1,15 +1,32 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
 import 'package:taskproject/features/profile/profile_add_or_update.dart';
+import 'package:taskproject/features/profile/provider/user_profile.provider.dart';
+import 'package:taskproject/features/profile/widgets/past_appointments_item.dart';
 import 'package:taskproject/utils/colors.dart';
 import 'package:taskproject/utils/keys.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    context.read<ProfileProvider>().getCurrentUser();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    final currentUser = context.watch<ProfileProvider>().getUser;
     return Scaffold(
         backgroundColor: AppColors.bgColor,
         appBar: AppBar(
@@ -50,11 +67,19 @@ class ProfilePage extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage:
-                        const NetworkImage('https://i.pravatar.cc/300'),
+                    backgroundImage: NetworkImage(currentUser?.photoUrl ?? ''),
                     onBackgroundImageError: (exception, stackTrace) {
                       return;
                     },
+                    child: Center(
+                      child: (currentUser != null)
+                          ? (currentUser.photoUrl!.isEmpty)
+                              ? Text(
+                                  '${currentUser.firstName[0]} ${(currentUser.lastName.isNotEmpty) ? currentUser.lastName[0] : ''}',
+                                )
+                              : const SizedBox.shrink()
+                          : const Text('FN'),
+                    ),
                   ),
                   Positioned(
                     right: 5,
@@ -88,70 +113,26 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ],
               ),
-              const Text(
-                'Mathew Adam',
-                style: TextStyle(
+              Text(
+                ('${currentUser?.firstName} ${currentUser?.lastName}'),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const Text('mathew@email.com'),
+              Text(currentUser?.email ?? 'mathew@email.com'),
               const Gap(12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Ink(
-                    height: 90,
-                    width: 90,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(15))),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '23y 4m',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Gap(4),
-                        Text('Age')
-                      ],
-                    ),
+                  const ProfilePropertyWidget(
+                    label: 'Age',
+                    property: '23y 4m',
                   ),
                   const Gap(20),
-                  Ink(
-                    height: 90,
-                    width: 90,
-                    decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(15))),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'male',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Gap(4),
-                        Text('Birth Gender')
-                      ],
-                    ),
-                  ),
+                  ProfilePropertyWidget(
+                      label: 'Birth Gender',
+                      property: currentUser?.gender ?? 'male')
                 ],
               ),
               const Align(
@@ -162,66 +143,129 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                height: 90,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: 3,
-                  itemBuilder: (context, index) {
-                    if (index == 2) {
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
-                            InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () {
-                                AppKeys.mainAppNav.currentState?.push(
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const ProfileAddOrUpdate(
-                                                isUpdateProfile: false)));
-                              },
-                              child: Ink(
-                                height: 40,
-                                width: 40,
-                                decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(
-                                      color: Colors.black,
-                                    ),
-                                    shape: BoxShape.circle),
-                                child: const Icon(
-                                  Icons.add,
-                                ),
+                  height: 90,
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('familyMembers')
+                        .where(
+                          'userId',
+                          isEqualTo: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(
+                                FirebaseAuth.instance.currentUser?.uid,
                               ),
-                            ),
-                            const Gap(4),
-                            const Text('Add'),
-                          ],
-                        ),
+                        )
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      var familyMembers = snapshot.data?.docs ?? [];
+
+                      return ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: familyMembers.length + 1,
+                        itemBuilder: (context, index) {
+                          if (familyMembers.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                children: [
+                                  InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: () {
+                                      AppKeys.mainAppNav.currentState?.push(
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const ProfileAddOrUpdate(
+                                                      isUpdateProfile: false)));
+                                    },
+                                    child: Ink(
+                                      height: 40,
+                                      width: 40,
+                                      decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border.all(
+                                            color: Colors.black,
+                                          ),
+                                          shape: BoxShape.circle),
+                                      child: const Icon(
+                                        Icons.add,
+                                      ),
+                                    ),
+                                  ),
+                                  const Gap(4),
+                                  const Text('Add'),
+                                ],
+                              ),
+                            );
+                          } else {
+                            if (index == familyMembers.length) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  children: [
+                                    InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () {
+                                        AppKeys.mainAppNav.currentState?.push(
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const ProfileAddOrUpdate(
+                                                        isUpdateProfile:
+                                                            false)));
+                                      },
+                                      child: Ink(
+                                        height: 40,
+                                        width: 40,
+                                        decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border.all(
+                                              color: Colors.black,
+                                            ),
+                                            shape: BoxShape.circle),
+                                        child: const Icon(
+                                          Icons.add,
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(4),
+                                    const Text('Add'),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              var familyMember = familyMembers[index];
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 20,
+                                      backgroundImage: NetworkImage(
+                                          familyMember['photoUrl'] ?? ''),
+                                      onBackgroundImageError:
+                                          (exception, stackTrace) {
+                                        return;
+                                      },
+                                      child: (familyMember['photoUrl'].isEmpty)
+                                          ? Center(
+                                              child: Text(
+                                                  familyMember['fullName'][0]))
+                                          : const SizedBox.shrink(),
+                                    ),
+                                    const Gap(4),
+                                    Text(familyMember['relation']),
+                                  ],
+                                ),
+                              );
+                            }
+                          }
+                        },
                       );
-                    } else {
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundImage: const NetworkImage(
-                                  'https://i.pravatar.cc/300'),
-                              onBackgroundImageError: (exception, stackTrace) {
-                                return;
-                              },
-                            ),
-                            const Gap(4),
-                            const Text('Brother'),
-                          ],
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
+                    },
+                  )),
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -236,97 +280,54 @@ class ProfilePage extends StatelessWidget {
                 child: ListView.builder(
                     itemCount: 8,
                     itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Card(
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(15),
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 30,
-                                  backgroundImage: const NetworkImage(
-                                      'https://i.pravatar.cc/300'),
-                                  onBackgroundImageError:
-                                      (exception, stackTrace) {
-                                    return;
-                                  },
-                                ),
-                                Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Dr. Graham George',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Ink(
-                                        height: 28,
-                                        width: 50,
-                                        decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .secondaryContainer,
-                                            borderRadius:
-                                                const BorderRadius.all(
-                                              Radius.circular(12),
-                                            )),
-                                        child: const Padding(
-                                          padding: EdgeInsets.all(5.0),
-                                          child: Row(children: [
-                                            Icon(
-                                              Icons.heart_broken,
-                                              color: Colors.red,
-                                              size: 18,
-                                            ),
-                                            Text('4.0')
-                                          ]),
-                                        ),
-                                      ),
-                                      const Row(
-                                        children: [
-                                          Icon(
-                                            Icons.video_call,
-                                            size: 18,
-                                          ),
-                                          Text('Video Session'),
-                                        ],
-                                      ),
-                                      const Text('Mathew Adam (me)'),
-                                    ]),
-                                const Gap(20),
-                                const Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '60 \$',
-                                      style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                    SizedBox(
-                                        width: 90,
-                                        child: Text('Monday, Oct 10, 08:30 PM'))
-                                  ],
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
+                      return const PastAppointmentsItem();
                     }),
               )
             ],
           ),
         ));
+  }
+}
+
+class ProfilePropertyWidget extends StatelessWidget {
+  const ProfilePropertyWidget({
+    super.key,
+    required this.label,
+    required this.property,
+  });
+
+  final String label;
+  final String property;
+
+  @override
+  Widget build(BuildContext context) {
+    return Ink(
+      height: 100,
+      width: 100,
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+          border: Border.all(
+            color: Colors.grey.shade300,
+            width: 1,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(15))),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            property,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Gap(4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+          )
+        ],
+      ),
+    );
   }
 }

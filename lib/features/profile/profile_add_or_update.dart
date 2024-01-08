@@ -1,7 +1,16 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:taskproject/features/auth/model/user.dart';
 import 'package:taskproject/features/auth/register_screen.dart';
+import 'package:taskproject/features/profile/model/family_member.model.dart';
+import 'package:taskproject/features/profile/provider/user_profile.provider.dart';
+import 'package:taskproject/features/profile/services/profile_image.service.dart';
 import 'package:taskproject/utils/keys.dart';
+import 'package:taskproject/utils/utils.dart';
 import 'package:taskproject/widgets/custom_text_field.dart';
 
 class ProfileAddOrUpdate extends StatefulWidget {
@@ -28,23 +37,37 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
   late final FocusNode emailFocus;
 
   var selectedGender = '';
+  String? imageUrl = '';
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   void initState() {
-    fullNameController = TextEditingController();
+    final user = context.read<ProfileProvider>().getUser;
+    imageUrl = widget.isUpdateProfile ? user?.photoUrl : '';
+    fullNameController = TextEditingController(
+        text: widget.isUpdateProfile
+            ? '${user?.firstName} ${user?.lastName ?? ''}'
+            : '');
     relationController = TextEditingController();
-    phoneController = TextEditingController();
-    birthdateController = TextEditingController();
+    phoneController =
+        TextEditingController(text: widget.isUpdateProfile ? user?.phone : '');
+    birthdateController = TextEditingController(
+        text: widget.isUpdateProfile ? user?.birthdate : '');
+    emailController =
+        TextEditingController(text: widget.isUpdateProfile ? user?.email : '');
+    selectedGender = widget.isUpdateProfile ? user?.gender ?? '' : '';
     fullNameFocus = FocusNode();
     relationFocus = FocusNode();
     phoneFocus = FocusNode();
     birthDateFocus = FocusNode();
-    emailController = TextEditingController();
     emailFocus = FocusNode();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = context.read<ProfileProvider>().getUser;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
     final width = MediaQuery.sizeOf(context).width;
     return Scaffold(
       appBar: AppBar(
@@ -74,31 +97,72 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
               child: Form(
+                key: _formKey,
                 child: Column(
                   children: [
                     Stack(
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundImage:
-                              const NetworkImage('https://i.pravatar.cc/300'),
+                          backgroundImage: NetworkImage(widget.isUpdateProfile
+                              ? imageUrl!.isNotEmpty
+                                  ? imageUrl!
+                                  : user?.photoUrl ?? ''
+                              : imageUrl!),
                           onBackgroundImageError: (exception, stackTrace) {
                             return;
                           },
+                          child: (imageUrl!.isEmpty)
+                              ? Center(
+                                  child: Text(
+                                    widget.isUpdateProfile
+                                        ? '${user?.firstName[0]} ${(user!.lastName.isNotEmpty) ? user.lastName[0] : ''}'
+                                        : 'Add Image',
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                         ),
                         Positioned(
                           right: 5,
                           bottom: 5,
-                          child: Container(
-                            height: 30,
-                            width: 30,
-                            decoration: const BoxDecoration(
-                                shape: BoxShape.circle, color: Colors.black),
-                            child: const Center(
-                              child: Icon(
-                                Icons.camera_alt_outlined,
-                                size: 15,
-                                color: Colors.white,
+                          child: Material(
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () {
+                                AppUtils.showPickImageDialog(
+                                  context,
+                                  () async {
+                                    imageUrl = await ProfileImageService
+                                        .getProfilePicture(
+                                      context,
+                                      userId!,
+                                      ImageSource.camera,
+                                    );
+                                  },
+                                  () async {
+                                    imageUrl = await ProfileImageService
+                                        .getProfilePicture(
+                                      context,
+                                      userId!,
+                                      ImageSource.gallery,
+                                    );
+                                  },
+                                );
+                              },
+                              child: Ink(
+                                height: 30,
+                                width: 30,
+                                decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.camera_alt_outlined,
+                                    size: 15,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -145,6 +209,8 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'email can not be empty';
+                              } else if (!AppUtils.isValidEmail(value)) {
+                                return 'Please enter valid email user@example.com';
                               }
                               return null;
                             },
@@ -191,8 +257,12 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                     CustomTextField(
                         textController: birthdateController,
                         textFocus: birthDateFocus,
-                        isPass: true,
+                        isPass: false,
+                        readOnly: true,
                         hintText: '03 Jan 2000',
+                        onTap: () {
+                          _selectDate(context);
+                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'date of birth can not be empty';
@@ -200,7 +270,9 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                           return null;
                         },
                         isMultiLine: false,
-                        onSubmitted: (value) {}),
+                        onSubmitted: (value) {
+                          debugPrint(value + birthdateController.text);
+                        }),
                     const Gap(10),
                     const Align(
                         alignment: Alignment.centerLeft,
@@ -212,7 +284,7 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                           children: [
                             const Text('Male'),
                             Radio(
-                              value: 'Male',
+                              value: 'male',
                               groupValue: selectedGender,
                               onChanged: (value) {
                                 setState(() {
@@ -226,7 +298,7 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                           children: [
                             const Text('Female'),
                             Radio(
-                              value: 'Female',
+                              value: 'female',
                               groupValue: selectedGender,
                               onChanged: (value) {
                                 setState(
@@ -243,7 +315,45 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                     const Gap(20),
                     CustomButton(
                       width: width * 0.8,
-                      onTap: () {},
+                      onTap: () {
+                        if (_formKey.currentState!.validate()) {
+                          if (widget.isUpdateProfile) {
+                            final updateUser = UserModel(
+                                firstName: fullNameController.text
+                                    .trim()
+                                    .split(' ')[0],
+                                lastName:
+                                    fullNameController.text.trim().contains(' ')
+                                        ? fullNameController.text
+                                            .trim()
+                                            .split(' ')[1]
+                                        : '',
+                                email: emailController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                password: '',
+                                gender: selectedGender,
+                                birthdate:
+                                    birthdateController.text.trim().toString(),
+                                photoUrl: imageUrl);
+                            debugPrint(
+                                '${updateUser.firstName} ${updateUser.lastName} ${updateUser.email} ${updateUser.gender} ${updateUser.birthdate} ${updateUser.phone}');
+                            context
+                                .read<ProfileProvider>()
+                                .updateUserProfile(context, updateUser);
+                          } else {
+                            final familyMember = FamilyMember(
+                                fullName: fullNameController.text.trim(),
+                                relation: relationController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                birthdate: birthdateController.text.trim(),
+                                gender: selectedGender.trim(),
+                                photoUrl: imageUrl);
+                            context
+                                .read<ProfileProvider>()
+                                .addFamilyMember(context, familyMember);
+                          }
+                        }
+                      },
                       title: widget.isUpdateProfile ? 'update' : 'Add',
                     ),
                   ],
@@ -254,5 +364,23 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
         ),
       ),
     );
+  }
+
+  DateTime? _selectedDate;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime picked = (await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    ))!;
+
+    if (picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        birthdateController.text = DateFormat('dd MMM yyyy').format(picked);
+      });
+    }
   }
 }
