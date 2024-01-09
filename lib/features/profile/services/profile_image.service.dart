@@ -83,16 +83,20 @@ class ProfileImageService {
     }
   }
 
-  static Future<String?> getProfilePicture(
-      BuildContext context, String userId, ImageSource imageSource) async {
+  static Future<String?> getProfilePicture(BuildContext context, String userId,
+      ImageSource imageSource, isFamilyMember) async {
     String? imageUrl = '';
     try {
       File? imageFile = await pickAndCropImageFromGallery(imageSource);
       if (imageFile != null) {
-        String? downloadURL =
-            await uploadImageToFirebaseStorage(imageFile, userId, true);
-        debugPrint('url: $downloadURL');
-        imageUrl = downloadURL;
+        if (isFamilyMember) {
+          imageUrl =
+              await uploadImageToFirebaseStorage(imageFile, userId, true);
+        } else {
+          imageUrl =
+              await uploadImageToFirebaseStorage(imageFile, userId, false);
+        }
+        debugPrint('url: $imageUrl');
       }
     } catch (e) {
       debugPrint('Error updating profile picture: $e');

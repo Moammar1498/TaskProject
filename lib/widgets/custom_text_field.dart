@@ -13,9 +13,11 @@ class CustomTextField extends StatelessWidget {
     required this.onSubmitted,
     this.onTap,
     this.readOnly = false,
+    this.isPhone = false,
   }) : super(key: key);
 
   final bool readOnly;
+  final bool isPhone;
 
   final TextEditingController textController;
   final FocusNode textFocus;
@@ -42,18 +44,23 @@ class CustomTextField extends StatelessWidget {
                 decoration: InputDecoration(
                   floatingLabelAlignment: FloatingLabelAlignment.start,
                   hintText: hintText.isEmpty ? 'Password' : hintText,
-                  fillColor: Colors.grey[100],
-                  filled: true,
                   isCollapsed: true,
                   contentPadding: const EdgeInsets.all(10),
                   prefixIcon: leadingIcon,
+                  hintStyle: const TextStyle(
+                      color: Color(0xFF989898), fontWeight: FontWeight.w400),
                   suffixIcon: InkWell(
-                      onTap: () {
-                        obscurePassword.value = !obscurePassword.value;
-                      },
-                      child: Icon(obscurePassword.value
+                    onTap: () {
+                      obscurePassword.value = !obscurePassword.value;
+                    },
+                    child: Icon(
+                      obscurePassword.value
                           ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined)),
+                          : Icons.visibility_outlined,
+                      color: const Color(0xFF989898),
+                      size: 25,
+                    ),
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: Colors.black),
                     borderRadius: BorderRadius.circular(10),
@@ -71,6 +78,7 @@ class CustomTextField extends StatelessWidget {
         : TextFormField(
             onTap: onTap,
             readOnly: readOnly,
+            keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
             onTapOutside: (e) {
               textFocus.unfocus();
             },
@@ -87,8 +95,8 @@ class CustomTextField extends StatelessWidget {
               contentPadding: const EdgeInsets.all(10),
               isCollapsed: true,
               hintText: hintText,
-              fillColor: Colors.grey[100],
-              filled: true,
+              hintStyle: const TextStyle(
+                  color: Color(0xFF989898), fontWeight: FontWeight.w400),
               focusedBorder: OutlineInputBorder(
                 borderSide: const BorderSide(color: Colors.black),
                 borderRadius: BorderRadius.circular(10),

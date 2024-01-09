@@ -44,12 +44,17 @@ class BottomNavTile extends StatelessWidget {
             onPressed: () {
               navItem.setTabSelection(item);
             },
-            icon: Icon(
-              item.icon,
-              color: navItem.tabSelection == item.route
-                  ? AppColors.primaryColor
-                  : Colors.black,
-            ),
+            icon: (item.route == 'profile')
+                ? CircleAvatar(
+                    radius: 12,
+                    backgroundImage: AssetImage(item.iconSrc),
+                  )
+                : ImageIcon(
+                    AssetImage(item.iconSrc),
+                    color: navItem.tabSelection == item.route
+                        ? AppColors.primaryColor
+                        : Colors.black,
+                  ),
           ),
           navItem.tabSelection == item.route
               ? const SizedBox(

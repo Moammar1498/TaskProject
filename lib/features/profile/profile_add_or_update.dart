@@ -5,12 +5,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:taskproject/features/auth/model/user.dart';
-import 'package:taskproject/features/auth/register_screen.dart';
 import 'package:taskproject/features/profile/model/family_member.model.dart';
 import 'package:taskproject/features/profile/provider/user_profile.provider.dart';
 import 'package:taskproject/features/profile/services/profile_image.service.dart';
 import 'package:taskproject/utils/keys.dart';
 import 'package:taskproject/utils/utils.dart';
+import 'package:taskproject/widgets/custom_button.dart';
 import 'package:taskproject/widgets/custom_text_field.dart';
 
 class ProfileAddOrUpdate extends StatefulWidget {
@@ -38,6 +38,15 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
 
   var selectedGender = '';
   String? imageUrl = '';
+  String? selectedRelation;
+  final relationList = [
+    'Brother',
+    'Father',
+    'Mother',
+    'Sister',
+    'Son',
+    'Daughter'
+  ];
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
@@ -135,18 +144,24 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                                   () async {
                                     imageUrl = await ProfileImageService
                                         .getProfilePicture(
-                                      context,
-                                      userId!,
-                                      ImageSource.camera,
-                                    );
+                                            context,
+                                            userId!,
+                                            ImageSource.camera,
+                                            (widget.isUpdateProfile)
+                                                ? false
+                                                : true);
+                                    setState(() {});
                                   },
                                   () async {
                                     imageUrl = await ProfileImageService
                                         .getProfilePicture(
-                                      context,
-                                      userId!,
-                                      ImageSource.gallery,
-                                    );
+                                            context,
+                                            userId!,
+                                            ImageSource.gallery,
+                                            (widget.isUpdateProfile)
+                                                ? false
+                                                : true);
+                                    setState(() {});
                                   },
                                 );
                               },
@@ -217,21 +232,35 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                             isMultiLine: false,
                             onSubmitted: (value) {},
                           )
-                        : CustomTextField(
-                            textController: relationController,
-                            textFocus: relationFocus,
-                            isPass: false,
-                            leadingIcon: null,
-                            hintText: "Relation",
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'relation can not be empty';
-                              }
-                              return null;
-                            },
-                            isMultiLine: false,
-                            onSubmitted: (value) {},
-                          ),
+                        : DropdownButtonFormField<String>(
+                            dropdownColor: Theme.of(context).cardColor,
+                            isExpanded: true,
+                            style: TextStyle(
+                                color: (Theme.of(context).brightness ==
+                                        Brightness.light)
+                                    ? Colors.black
+                                    : Colors.white),
+                            alignment: Alignment.centerRight,
+                            decoration: buildInputDecoration(
+                                context, 'Select Relation'),
+                            value: selectedRelation,
+                            items: relationList.map<DropdownMenuItem<String>>(
+                              (String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(
+                                    value,
+                                    textScaler: const TextScaler.linear(1.0),
+                                  ),
+                                );
+                              },
+                            ).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedRelation =
+                                    newValue!; //user.indexOf(value!);
+                              });
+                            }),
                     const Gap(10),
                     const Align(
                         alignment: Alignment.centerLeft, child: Text('Phone')),
@@ -239,6 +268,7 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                       textController: phoneController,
                       textFocus: phoneFocus,
                       isPass: false,
+                      isPhone: true,
                       leadingIcon: null,
                       hintText: "+92 31389*****",
                       validator: (value) {
@@ -261,7 +291,7 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                         readOnly: true,
                         hintText: '03 Jan 2000',
                         onTap: () {
-                          _selectDate(context);
+                          selectDate(context);
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -343,7 +373,7 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
                           } else {
                             final familyMember = FamilyMember(
                                 fullName: fullNameController.text.trim(),
-                                relation: relationController.text.trim(),
+                                relation: selectedRelation?.trim(),
                                 phone: phoneController.text.trim(),
                                 birthdate: birthdateController.text.trim(),
                                 gender: selectedGender.trim(),
@@ -366,9 +396,9 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
     );
   }
 
-  DateTime? _selectedDate;
+  DateTime? selectedDate;
 
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> selectDate(BuildContext context) async {
     final DateTime picked = (await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -376,11 +406,36 @@ class _ProfileAddOrUpdateState extends State<ProfileAddOrUpdate> {
       lastDate: DateTime(2101),
     ))!;
 
-    if (picked != _selectedDate) {
+    if (picked != selectedDate) {
       setState(() {
-        _selectedDate = picked;
+        selectedDate = picked;
         birthdateController.text = DateFormat('dd MMM yyyy').format(picked);
       });
     }
+  }
+
+  InputDecoration buildInputDecoration(BuildContext context, String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(
+          color: Color(0xFF989898), fontWeight: FontWeight.w400),
+      contentPadding: const EdgeInsets.all(10),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+      ),
+      isCollapsed: true,
+      disabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(
+            color: Color((Theme.of(context).brightness == Brightness.light)
+                ? 0xffE4E7EB
+                : 0xff263238)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0xffE4E7EB)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
   }
 }

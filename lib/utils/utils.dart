@@ -14,14 +14,20 @@ class AppUtils {
           return CupertinoActionSheet(
             actions: [
               CupertinoActionSheetAction(
-                onPressed: byCamera,
+                onPressed: () {
+                  Navigator.of(cont).pop();
+                  byCamera();
+                },
                 child: const Text(
                   'Use Camera',
                   textScaler: TextScaler.linear(1.0),
                 ),
               ),
               CupertinoActionSheetAction(
-                onPressed: byGallery,
+                onPressed: () {
+                  Navigator.of(cont).pop();
+                  byGallery();
+                },
                 child: const Text(
                   'Upload from files',
                   textScaler: TextScaler.linear(1.0),

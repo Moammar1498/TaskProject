@@ -26,6 +26,8 @@ class ProfileRepository {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       currentUser?.updateEmail(userModel.email);
+      currentUser
+          ?.updateDisplayName('${userModel.firstName} ${userModel.lastName}');
       await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser?.uid)

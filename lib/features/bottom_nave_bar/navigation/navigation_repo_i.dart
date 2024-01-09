@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:taskproject/features/bottom_nave_bar/navigation/models/bottom_nav_item.dart';
 
 abstract class INavigationRepository {
@@ -10,22 +9,22 @@ class NavigationRepository extends INavigationRepository {
   List<BottomNavItem> getDefaultNavItems() {
     return [
       BottomNavItem(
-        icon: Icons.home_outlined,
+        iconSrc: 'assets/images/home.png',
         route: 'home',
         isSelected: true,
       ),
       BottomNavItem(
-        icon: Icons.calendar_month_outlined,
+        iconSrc: 'assets/images/calendar.png',
         route: 'calender',
         isSelected: true,
       ),
       BottomNavItem(
-        icon: Icons.notifications_outlined,
+        iconSrc: 'assets/images/notification.png',
         route: 'notification',
         isSelected: true,
       ),
       BottomNavItem(
-        icon: Icons.person_outline_outlined,
+        iconSrc: 'assets/images/profile.png',
         route: 'profile',
         isSelected: true,
       ),

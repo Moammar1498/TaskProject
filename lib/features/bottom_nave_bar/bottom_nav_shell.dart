@@ -18,7 +18,7 @@ class BottomNavShell extends StatelessWidget {
             onGenerateRoute: (settings) => Routes.generateRoute(settings),
           ),
           const Positioned(
-            bottom: 40,
+            bottom: 20,
             child: BottomNav(),
           ),
         ],

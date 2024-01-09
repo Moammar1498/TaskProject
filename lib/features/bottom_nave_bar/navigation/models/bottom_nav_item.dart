@@ -1,23 +1,22 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 
 class BottomNavItem {
-  final IconData icon;
+  final String iconSrc;
   final String route;
   final bool isSelected;
-
   BottomNavItem({
-    required this.icon,
+    required this.iconSrc,
     required this.route,
     required this.isSelected,
   });
 
   BottomNavItem copyWith({
-    IconData? icon,
+    String? iconSrc,
     String? route,
     bool? isSelected,
   }) {
     return BottomNavItem(
-      icon: icon ?? this.icon,
+      iconSrc: iconSrc ?? this.iconSrc,
       route: route ?? this.route,
       isSelected: isSelected ?? this.isSelected,
     );
