@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:taskproject/features/profile/provider/user_profile.provider.dart';
 import 'package:taskproject/utils/colors.dart';
+import 'package:uuid/uuid.dart';
+import 'package:uuid/v4.dart';
 
 class ProfileImageService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -42,13 +43,16 @@ class ProfileImageService {
   static Future<String?> uploadImageToFirebaseStorage(
       File imageFile, String userId, isFamilyMember) async {
     var downloadURL = '';
+    var uuid = const Uuid();
+    var imageName = 'image_${uuid.v4()}';
     try {
       if (isFamilyMember) {
         final storageReference = _storage
             .ref()
             .child('profile_images')
             .child(userId)
-            .child('familyMember');
+            .child('familyMember')
+            .child(imageName);
         final uploadTask = storageReference.putFile(imageFile);
         await uploadTask.whenComplete(() async {
           final String imageURL = await storageReference.getDownloadURL();
